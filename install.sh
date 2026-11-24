@@ -35,6 +35,7 @@ cd "$target"
 [[ -x venv/bin/python ]] || python3 -m venv venv
 venv/bin/python -m pip install -r requirements.txt
 venv/bin/python first_setup.py
+chmod 600 .env
 service_user="$(id -un)"
 service_group="$(id -gn)"
 service_file="$(mktemp)"
@@ -43,7 +44,8 @@ sed -e "s|@APP_DIR@|$target|g" -e "s|@SERVICE_USER@|$service_user|g" -e "s|@SERV
     scripts/playerok-cardinal.service.in > "$service_file"
 sudo install -m 644 "$service_file" /etc/systemd/system/playerok-cardinal.service
 sudo systemctl daemon-reload
-sudo systemctl enable --now playerok-cardinal.service
+sudo systemctl enable playerok-cardinal.service
+sudo systemctl restart playerok-cardinal.service
 sudo systemctl --no-pager --full status playerok-cardinal.service
 printf '\nБот работает как служба и продолжит работу после закрытия Termius.\n'
 printf 'Логи: sudo journalctl -u playerok-cardinal -f\n'
