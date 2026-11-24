@@ -22,13 +22,28 @@ if ! python3 -c 'import sys; raise SystemExit(sys.version_info < (3, 11))'; then
     exit 1
 fi
 if [[ -e "$target" ]]; then
-    printf 'Папка %s уже существует. Выберите другое расположение или сохраните её перед установкой.\n' "$target" >&2
-    exit 1
+    if [[ ! -d "$target/.git" || ! -f "$target/main.py" ]]; then
+        printf 'Папка %s существует, но не похожа на установку Playerok Cardinal. Файлы не изменены.\n' "$target" >&2
+        exit 1
+    fi
+    printf 'Найдена существующая установка. Обновляю код, сохраняя .env и пользовательские данные.\n'
+    git -C "$target" pull --ff-only
+else
+    git clone -- "$repo" "$target"
 fi
-git clone -- "$repo" "$target"
 cd "$target"
-python3 -m venv venv
+[[ -x venv/bin/python ]] || python3 -m venv venv
 venv/bin/python -m pip install -r requirements.txt
 venv/bin/python first_setup.py
-printf '%s\n' 'Запускаю бота. Для остановки нажмите Ctrl+C.'
-exec venv/bin/python main.py
+service_user="$(id -un)"
+service_group="$(id -gn)"
+service_file="$(mktemp)"
+trap 'rm -f "$service_file"' EXIT
+sed -e "s|@APP_DIR@|$target|g" -e "s|@SERVICE_USER@|$service_user|g" -e "s|@SERVICE_GROUP@|$service_group|g" \
+    scripts/playerok-cardinal.service.in > "$service_file"
+sudo install -m 644 "$service_file" /etc/systemd/system/playerok-cardinal.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now playerok-cardinal.service
+sudo systemctl --no-pager --full status playerok-cardinal.service
+printf '\nБот работает как служба и продолжит работу после закрытия Termius.\n'
+printf 'Логи: sudo journalctl -u playerok-cardinal -f\n'

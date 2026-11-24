@@ -2,6 +2,7 @@ import getpass
 import os
 import secrets
 import sys
+from pathlib import Path
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
@@ -31,6 +32,9 @@ def write_env(values: dict):
 
 
 def run():
+    if Path(".env").exists():
+        print("Настройки уже существуют в .env. Они сохранены; повторная настройка их не изменит.")
+        return
     if sys.platform == "win32":
         try:
             sys.stdout.reconfigure(encoding="utf-8")

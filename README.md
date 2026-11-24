@@ -8,13 +8,15 @@
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/Ziw1nFN/playerok-cardinal-public/main/install.sh)"
 ```
 
+Повторный запуск этой команды обновит код в `~/PlayerokCardinal`, сохранив `.env`, настройки, склад и статистику, затем включит службу systemd. Если бот сейчас запущен вручную в Termius, сначала остановите его сочетанием `Ctrl+C`, затем повторите команду. Одновременная работа старой копии и службы вызовет Telegram 409.
+
 На Windows установите Git и Python 3.11+, затем в PowerShell запустите:
 
 ```powershell
 irm https://raw.githubusercontent.com/Ziw1nFN/playerok-cardinal-public/main/install.ps1 | iex
 ```
 
-Установщик предложит ввести данные и запустит бота в текущем терминале. Данные сохраняются в `.env` на вашем устройстве. Для последующего запуска перейдите в папку `PlayerokCardinal` в домашнем каталоге и выполните `venv/bin/python main.py` на Ubuntu или откройте `Start.bat` на Windows.
+Установщик предложит ввести данные, сохранит их в `.env` и настроит службу systemd. На шаге установки службы потребуется пароль `sudo` пользователя сервера. После сообщения о запуске можно закрыть Termius: бот продолжит работать и автоматически запустится после перезагрузки сервера. Пароль панели задаётся один раз при первой настройке и хранится в `.env`; повторный запуск `first_setup.py` не перезапишет настройки. Посмотреть состояние: `sudo systemctl status playerok-cardinal`; логи: `sudo journalctl -u playerok-cardinal -f`; остановить: `sudo systemctl stop playerok-cardinal`.
 
 Бот-помощник продавца на [Playerok](https://playerok.com) по образцу FunPay Cardinal: несколько аккаунтов в одном
 боте, автовыдача, автоответчик, приветствие, восстановление и поднятие товаров, Telegram-панель, где всё
@@ -81,7 +83,7 @@ irm https://raw.githubusercontent.com/Ziw1nFN/playerok-cardinal-public/main/inst
 2. Запустите `Setup.bat` — он поставит зависимости и спросит токены.
 3. Запустите `Start.bat`. Остальные аккаунты добавляются в Telegram: меню → `👤 ▾` → «➕ Добавить аккаунт».
 
-Linux / VPS:
+Linux / VPS (если настроено вручную, без установщика):
 
 ```bash
 python3 -m venv venv && venv/bin/pip install -r requirements.txt
@@ -89,7 +91,7 @@ venv/bin/python first_setup.py
 venv/bin/python main.py
 ```
 
-Для постоянной работы на сервере настройте службу systemd под свою установку.
+Запуск из SSH вручную прекращается при закрытии сессии. Для постоянной работы настройте службу systemd.
 
 ## Синхронизация чатов: настройка
 

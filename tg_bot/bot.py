@@ -65,6 +65,7 @@ class TGBot:
         self.menu_commands: list[tuple[str, str]] = list(BUILTIN_COMMANDS)
         self.started = False
         self._finalized = False
+        self._polling_conflict_reported = False
         from tg_bot.chatsync import ChatSync
         from tg_bot.staff import StaffStore
         self.sync = ChatSync(self)
@@ -276,6 +277,16 @@ class TGBot:
             try:
                 self.bot.infinity_polling(**self.polling_kwargs())
             except Exception as e:
+                error_text = str(e).lower()
+                if getattr(e, "error_code", None) == 409 or ("409" in error_text and "conflict" in error_text):
+                    if not self._polling_conflict_reported:
+                        self._polling_conflict_reported = True
+                        message = ("⚠️ Telegram остановил получение сообщений: этот токен бота уже используется "
+                                   "другим запущенным экземпляром. Остановите вторую копию и перезапустите эту.")
+                        logger.error(message)
+                        self.send_notification(message)
+                    time.sleep(60)
+                    continue
                 logger.error(f"Telegram polling упал: {e}")
             time.sleep(5)
 
