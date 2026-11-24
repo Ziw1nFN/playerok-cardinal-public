@@ -2,7 +2,7 @@
 
 ## Установка одной командой
 
-На Ubuntu нужны Git, Python 3.11+ и модуль `venv`. В терминале запустите:
+На Ubuntu нужны Git, curl, Python 3.11+ и модуль `venv`. В терминале запустите:
 
 ```bash
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/Ziw1nFN/playerok-cardinal-public/main/install.sh)"
@@ -73,7 +73,7 @@ irm https://raw.githubusercontent.com/Ziw1nFN/playerok-cardinal-public/main/inst
   `#seller`, `#date`, `#time`. При редактировании бот показывает кнопки, которые копируют переменную, и пример
   готового текста. Старые `$username`, `$product` и т.п. тоже работают.
 - 🧩 **Плагины** — `BIND_TO_*` хэндлеры, UUID, включение для каждого аккаунта, страница настроек, свои
-  Telegram-команды. Подробно — [docs/PLUGINS.md](docs/PLUGINS.md).
+  Telegram-команды.
 
 ## Установка (Windows)
 
@@ -89,7 +89,7 @@ venv/bin/python first_setup.py
 venv/bin/python main.py
 ```
 
-Пример службы systemd — `scripts/playerok-cardinal.service`, деплой — `bash scripts/deploy.sh`.
+Для постоянной работы на сервере настройте службу systemd под свою установку.
 
 ## Синхронизация чатов: настройка
 

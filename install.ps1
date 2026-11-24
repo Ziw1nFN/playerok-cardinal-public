@@ -5,6 +5,8 @@ if (Test-Path -LiteralPath $target) {
 }
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) { throw 'Установите Git и повторите установку.' }
 if (-not (Get-Command py -ErrorAction SilentlyContinue)) { throw 'Установите Python 3.11 или новее и повторите установку.' }
+py -3 -c "import sys; raise SystemExit(sys.version_info < (3, 11))"
+if ($LASTEXITCODE -ne 0) { throw 'Нужен Python 3.11 или новее.' }
 git clone -- 'https://github.com/Ziw1nFN/playerok-cardinal-public.git' $target
 if ($LASTEXITCODE -ne 0) { throw 'Не удалось скачать бота.' }
 Set-Location -LiteralPath $target

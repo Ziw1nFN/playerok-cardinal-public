@@ -17,6 +17,10 @@ for cmd in git python3; do
         exit 1
     fi
 done
+if ! python3 -c 'import sys; raise SystemExit(sys.version_info < (3, 11))'; then
+    printf '%s\n' 'Нужен Python 3.11 или новее.' >&2
+    exit 1
+fi
 if [[ -e "$target" ]]; then
     printf 'Папка %s уже существует. Выберите другое расположение или сохраните её перед установкой.\n' "$target" >&2
     exit 1
