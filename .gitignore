@@ -1,0 +1,11 @@
+.env
+venv/
+__pycache__/
+*.pyc
+accounts/
+accounts.json
+storage/
+logs/
+backup/
+plugins/*
+!plugins/.gitkeep
