@@ -16,7 +16,7 @@ from Utils import tools
 from Utils.envfile import read_env, set_env
 
 logger = logging.getLogger('cardinal.control')
-INTERVAL = 300
+INTERVAL = 30
 
 
 class ControlClient:
