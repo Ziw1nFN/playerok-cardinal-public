@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import threading
 import time
+from datetime import datetime, timezone
 from html import escape
 from typing import TYPE_CHECKING
 
@@ -13,7 +14,7 @@ from telebot.types import InlineKeyboardMarkup as K
 from Utils import config as cfg
 from Utils import tools
 from Utils.migration import settings_from_v1
-from playerokapi.enums import ItemDealStatuses
+from playerokapi.enums import ItemDealStatuses, TransactionDirections, TransactionOperations, TransactionStatuses
 from tg_bot import keyboards as kbs
 from tg_bot import templates_ui
 
@@ -255,6 +256,53 @@ def cb_plugin_delete_yes(tg: TGBot, call: CallbackQuery):
         tg.answer(call, "Удалено")
 
 
+def pending_release_lines(c: Cardinal, now: datetime | None = None) -> list[str]:
+    now = now or datetime.now(timezone.utc)
+    cursor, seen, deadlines = None, set(), []
+    while True:
+        page = c.account.get_transactions(status=TransactionStatuses.PROCESSING, operation=TransactionOperations.SELL,
+                                          count=24, after_cursor=cursor)
+        for transaction in page.transactions:
+            if (transaction.status != TransactionStatuses.PROCESSING or
+                    transaction.operation != TransactionOperations.SELL or
+                    transaction.direction != TransactionDirections.IN):
+                continue
+            raw = getattr(transaction, "status_expiration_date", None)
+            if not raw:
+                continue
+            try:
+                deadline = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+                if deadline.tzinfo is None:
+                    continue
+                deadlines.append((deadline.astimezone(timezone.utc), getattr(transaction, "value", None)))
+            except (ValueError, TypeError, AttributeError):
+                continue
+        info = page.page_info
+        if not isinstance(info.has_next_page, bool):
+            raise ValueError("Playerok не сообщил число страниц")
+        if not info.has_next_page:
+            break
+        cursor = info.end_cursor
+        if not cursor or cursor in seen:
+            raise ValueError("Playerok вернул неверную страницу")
+        seen.add(cursor)
+    if not deadlines:
+        return []
+    lines = ["", "⏳ <b>Сроки удержания по продажам</b>"]
+    for deadline, value in sorted(deadlines, key=lambda row: row[0])[:5]:
+        seconds = max(0, int((deadline - now).total_seconds()))
+        minutes = (seconds + 59) // 60
+        days, minutes = divmod(minutes, 1440)
+        hours, minutes = divmod(minutes, 60)
+        remaining = f"{days} д. {hours} ч. {minutes} мин." if days else f"{hours} ч. {minutes} мин."
+        amount = f"{value} ₽ — " if isinstance(value, (int, float)) else ""
+        lines.append(f"• {amount}{'ещё ' + remaining if seconds else 'срок истёк, ожидается обновление Playerok'}")
+    if len(deadlines) > 5:
+        lines.append(f"И ещё операций: {len(deadlines) - 5}")
+    lines.append("<i>Суммы и сроки операций указаны Playerok и могут измениться; доступность денег определяет площадка.</i>")
+    return lines
+
+
 def profile_text(c: Cardinal) -> str:
     acc = c.account.get()
     p = getattr(acc, "profile", None)
@@ -269,6 +317,10 @@ def profile_text(c: Cardinal) -> str:
             lines.append(f"⏳ Ожидает зачисления: {p.balance.pending_income} ₽")
         lines.append(f"⭐ Рейтинг: {p.rating} ({p.reviews_count} отзывов)")
     lines.append(f"🌐 {tools.profile_link(acc.username)}")
+    try:
+        lines.extend(pending_release_lines(c))
+    except Exception:
+        lines += ["", "⏳ Сроки удержания: не удалось получить от Playerok."]
     return "\n".join(lines)
 
 
