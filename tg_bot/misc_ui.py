@@ -7,6 +7,8 @@ from html import escape
 from typing import TYPE_CHECKING
 
 from telebot.types import CallbackQuery, Message
+from telebot.types import InlineKeyboardButton as B
+from telebot.types import InlineKeyboardMarkup as K
 
 from Utils import config as cfg
 from Utils import tools
@@ -260,6 +262,9 @@ def profile_text(c: Cardinal) -> str:
     if p is not None:
         if p.balance is not None:
             lines.append(f"💰 Доступно: <b>{p.balance.available} ₽</b>")
+            withdrawable = getattr(p.balance, "withdrawable", None)
+            lines.append(f"💸 Доступно для вывода: <b>{withdrawable} ₽</b>" if withdrawable is not None
+                         else "💸 Доступно для вывода: не удалось получить")
             lines.append(f"💼 Всего: {p.balance.value} ₽, заморожено: {p.balance.frozen} ₽")
             lines.append(f"⏳ Ожидает зачисления: {p.balance.pending_income} ₽")
         lines.append(f"⭐ Рейтинг: {p.rating} ({p.reviews_count} отзывов)")
@@ -267,12 +272,20 @@ def profile_text(c: Cardinal) -> str:
     return "\n".join(lines)
 
 
+def profile_kb(c: Cardinal) -> K:
+    kb = K()
+    kb.row(B("📊 Статистика продаж", callback_data=kbs.cb("st", c.id, "w")))
+    kb.row(B("⏳ Ожидают подтверждения", callback_data=kbs.cb("dl", c.id, "s", 0)))
+    kb.row(B("◀️ В меню", callback_data="menu"))
+    return kb
+
+
 def cb_profile(tg: TGBot, call: CallbackQuery):
     c = tg.account_from(call)
     if c is None:
         return
     try:
-        tg.edit(call, profile_text(c), kbs.back_kb())
+        tg.edit(call, profile_text(c), profile_kb(c))
         tg.answer(call)
     except Exception as e:
         tg.answer(call, f"Ошибка: {e}"[:190], alert=True)
@@ -284,7 +297,7 @@ def cmd_profile(tg: TGBot, m: Message):
         tg.bot.send_message(m.chat.id, "Аккаунтов пока нет")
         return
     try:
-        tg.bot.send_message(m.chat.id, profile_text(c), disable_web_page_preview=True)
+        tg.bot.send_message(m.chat.id, profile_text(c), reply_markup=profile_kb(c), disable_web_page_preview=True)
     except Exception as e:
         tg.bot.send_message(m.chat.id, f"❌ Не удалось получить профиль: {escape(str(e))}")
 
